@@ -8,6 +8,7 @@ import VariantsService from './variants/service/VariantsService';
 import BusinessesService from './businesses/service/BusinessesService';
 import Environment from './model/Environment';
 import SessionsService from './sessions/service/SessionsService';
+import SuppliersService from './suppliers/service/SuppliersService';
 
 const MISSING_SESSION_ID_ERROR_MESSAGE = 'sessionId is required.';
 const MINIMUM_REQUEST_RETRY_RANDOM_DELAY_TOO_SMALL_ERROR_MESSAGE =
@@ -32,6 +33,7 @@ export default class ChannelApeClient {
   private readonly requestClientWrapper: RequestClientWrapper;
   private readonly actionsService: ActionsService;
   private readonly channelsService: ChannelsService;
+  private readonly suppliersService: SuppliersService;
   private readonly ordersService: OrdersService;
   private readonly variantsService: VariantsService;
   private readonly businessesService: BusinessesService;
@@ -70,6 +72,7 @@ export default class ChannelApeClient {
     });
     this.actionsService = new ActionsService(this.requestClientWrapper);
     this.channelsService = new ChannelsService(this.requestClientWrapper);
+    this.suppliersService = new SuppliersService(this.requestClientWrapper);
     this.ordersService = new OrdersService(this.requestClientWrapper);
     this.variantsService = new VariantsService(this.requestClientWrapper);
     this.businessesService = new BusinessesService(this.requestClientWrapper);
@@ -98,6 +101,10 @@ export default class ChannelApeClient {
 
   channels(): ChannelsService {
     return this.channelsService;
+  }
+
+  suppliers(): SuppliersService {
+    return this.suppliersService;
   }
 
   actions(): ActionsService {

@@ -8,6 +8,7 @@ import ChannelApeClient from '../src/ChannelApeClient';
 import OrderStatus from '../src/orders/model/OrderStatus';
 import OrdersQueryRequestByBusinessId from '../src/orders/model/OrdersQueryRequestByBusinessId';
 import Channel from '../src/channels/model/Channel';
+import Supplier from '../src/suppliers/model/Supplier';
 import VariantsRequestByProductId from '../src/variants/model/VariantsRequestByProductId';
 import VariantsRequest from '../src/variants/model/VariantsRequest';
 import VariantsSearchRequestByProductFilterId from '../src/variants/model/VariantsSearchRequestByProductFilterId';
@@ -16,6 +17,7 @@ import VariantsSearchRequestBySku from '../src/variants/model/VariantsSearchRequ
 import VariantsSearchRequestByUpc from '../src/variants/model/VariantsSearchRequestByUpc';
 import VariantsSearchRequestByTag from '../src/variants/model/VariantsSearchRequestByTag';
 import OrderCreateRequest from '../src/orders/model/OrderCreateRequest';
+import OrdersQueryRequestByChannelOrderId from '../src/orders/model/OrdersQueryRequestByChannelOrderId';
 
 describe('ChannelApe Client', () => {
   describe('Given valid session ID', () => {
@@ -141,6 +143,37 @@ describe('ChannelApe Client', () => {
               }
             }
             assertChannelEuropaSportsSnackFoods(channels[i]);
+          });
+        });
+      });
+    });
+
+    describe('And valid supplier ID', () => {
+      context('When retrieving supplier', () => {
+        it('Then return supplier', () => {
+          const expectedSupplierId = '1e4ebaa6-9796-4ccf-bd73-8765893a66bd';
+          const actualSupplierPromise = channelApeClient.suppliers().get(expectedSupplierId);
+          return actualSupplierPromise.then(assertSupplierEuropaSportsSnackFoods);
+        });
+      });
+    });
+
+    describe('And valid business ID', () => {
+      context('When retrieving suppliers', () => {
+        it('Then return suppliers', () => {
+          const expectedBusinessId = '4baafa5b-4fbf-404e-9766-8a02ad45c3a4';
+          const actualSuppliersPromise = channelApeClient.suppliers().get({
+            businessId: expectedBusinessId
+          });
+          return actualSuppliersPromise.then((suppliers) => {
+            expect(suppliers).to.be.an('array');
+            let i: number;
+            for (i = 0; i < suppliers.length; i += 1) {
+              if (suppliers[i].id === '1e4ebaa6-9796-4ccf-bd73-8765893a66bd') {
+                break;
+              }
+            }
+            assertSupplierEuropaSportsSnackFoods(suppliers[i]);
           });
         });
       });
@@ -293,10 +326,91 @@ describe('ChannelApe Client', () => {
       });
     });
 
+    describe('And valid order delete request', () => {
+      context('When deleting an order', () => {
+        it('Then delete the order', () => {
+          const expectedBusinessId = '4baafa5b-4fbf-404e-9766-8a02ad45c3a4';
+          const expectedChannelId = '1b45b1a5-931c-454d-9385-23228b750faf';
+          const expectedFirstName = faker.name.firstName();
+          const expectedLastName = faker.name.lastName();
+          const expectedChannelOrderId = Math.random().toString();
+          const fullName = `${expectedFirstName} ${expectedLastName}`;
+          const expectedLineItemQuantities = [
+            faker.random.number(20) + 1,
+            faker.random.number(20) + 1,
+            faker.random.number(20) + 1,
+            faker.random.number(20) + 1,
+          ];
+          const expectedLineItemTitles = [
+            faker.commerce.productName(),
+            faker.commerce.productName(),
+            faker.commerce.productName(),
+            faker.commerce.productName()
+          ];
+          const expectedOrderStatus = OrderStatus.OPEN;
+          const expectedPurchasedAtDate = new Date();
+
+          const orderToCreate: OrderCreateRequest = {
+            additionalFields: [
+              { name: 'name', value: `SDK${parseInt((Math.random() * 100000).toString(), 10).toString()}` },
+              { name: 'order_number', value: parseInt((Math.random() * 100000).toString(), 10).toString() }
+            ],
+            totalPrice: faker.random.number({ min: 1, max: 700, precision: 2 }),
+            alphabeticCurrencyCode: 'USD',
+            channelId: expectedChannelId,
+            channelOrderId: expectedChannelOrderId,
+            customer: {
+              firstName: expectedFirstName,
+              lastName: expectedLastName,
+              name: fullName,
+              additionalFields: [
+                { name: 'extraCustomerData', value: faker.random.words(5) }
+              ]
+            },
+            status: expectedOrderStatus,
+            purchasedAt: expectedPurchasedAtDate,
+            lineItems: []
+          };
+          for (let i = 0; i < 4; i += 1) {
+            orderToCreate.lineItems.push({
+              id: (i + 1).toString(),
+              quantity: expectedLineItemQuantities[i],
+              title: expectedLineItemTitles[i],
+              additionalFields: [
+                { name: 'extraLineItemData', value: faker.random.words(5) }
+              ]
+            });
+          }
+
+          return channelApeClient.orders().create(orderToCreate).then((createdOrder) => {
+            expect(createdOrder.businessId).to.equal(expectedBusinessId);
+            expect(createdOrder.totalPrice).to.equal(orderToCreate.totalPrice);
+            const request: OrdersQueryRequestByChannelOrderId = {
+              businessId: createdOrder.businessId,
+              channelOrderId: createdOrder.channelOrderId
+            };
+            return channelApeClient.orders().get(request)
+              .then((ordersBeforeDeletion) => {
+                return channelApeClient.orders().delete(ordersBeforeDeletion[0].id)
+                  .then((deletedOrder) => {
+                    expect(deletedOrder.channelOrderId).to.equal(createdOrder.channelOrderId);
+                    return channelApeClient.orders().get(request)
+                      .then((ordersAfterDeletion) => {
+                        expect(ordersAfterDeletion.length).to.equal(0,
+                          `There should be no orders with channelOrderId "${createdOrder.channelOrderId}" on business
+                          "${createdOrder.businessId}" after deleting said order`);
+                      });
+                  });
+              });
+          });
+        });
+      });
+    });
+
     describe('And valid business ID', () => {
       describe('And a startDate of "2018-03-29T17:00:51.000Z" and an endDate of "2018-08-23T12:41:33.000Z"', () => {
         context('When retrieving orders', () => {
-          it('Then return the 229 orders between those dates', () => {
+          it('Then return the 230 orders between those dates', () => {
             const expectedBusinessId = '4baafa5b-4fbf-404e-9766-8a02ad45c3a4';
             const ordersQueryRequestByBusinessId: OrdersQueryRequestByBusinessId = {
               businessId: expectedBusinessId,
@@ -306,7 +420,7 @@ describe('ChannelApe Client', () => {
             const actualOrdersPromise = channelApeClient.orders().get(ordersQueryRequestByBusinessId);
             return actualOrdersPromise.then((actualOrders) => {
               expect(actualOrders).to.be.an('array');
-              expect(actualOrders.length).to.equal(229);
+              expect(actualOrders.length).to.equal(230);
               expect(actualOrders[0].id).to.equal('dda8a05f-d5dd-4535-9261-b55c501085ef');
             });
           });
@@ -342,7 +456,7 @@ describe('ChannelApe Client', () => {
               const actualOrdersPromise = channelApeClient.orders().getPage(ordersQueryRequestByBusinessId);
               return actualOrdersPromise.then((actualOrders) => {
                 expect(actualOrders.orders).to.be.an('array');
-                expect(actualOrders.orders.length).to.equal(51);
+                expect(actualOrders.orders.length).to.equal(52);
                 expect(actualOrders.orders[0].id).to.equal('a6f23ae7-fae6-4cf3-b7b9-10eaa84d7ff2');
                 expect(actualOrders.pagination.lastPage).to.equal(true);
               });
@@ -565,5 +679,32 @@ describe('ChannelApe Client', () => {
     expect(channel.createdAt.toISOString()).to.equal(expectedCreatedAt.toISOString());
     expect(channel.updatedAt.getUTCMilliseconds())
       .to.be.greaterThan(expectedCreatedAt.getUTCMilliseconds());
+  }
+
+  function assertSupplierEuropaSportsSnackFoods(supplier: Supplier) {
+    expect(supplier.businessId).to.equal('4baafa5b-4fbf-404e-9766-8a02ad45c3a4');
+    expect(supplier.enabled).to.equal(true);
+    expect(supplier.fileSettings!.additionalFieldsMapping[0].columnIndex).to.equal(55);
+    expect(supplier.fileSettings!.additionalFieldsMapping[1].sourceId).to.equal('products');
+    expect(supplier.fileSettings!.descriptionMapping[0].columnIndex).to.equal(7);
+    expect(supplier.fileSettings!.descriptionMapping[1].prefix)
+      .to.equal('<div class="directions">Directions</div><p>');
+    expect(supplier.fileSettings!.imagesMapping[0].columnIndex).to.equal(49);
+    expect(supplier.fileSettings!.optionsMapping[0].key).to.equal('Flavor');
+    expect(supplier.fileSettings!.optionsMapping[0].columnIndex).to.equal(11);
+    expect(supplier.fileSettings!.primaryCategoryMapping.columnIndex).to.equal(16);
+    expect(supplier.fileSettings!.productMapping.columnIndex).to.equal(2);
+    expect(supplier.fileSettings!.retailPriceMapping.columnIndex).to.equal(19);
+    expect(supplier.fileSettings!.retailPriceMapping.currencyCode).to.equal('USD');
+    expect(supplier.fileSettings!.sources[0].id).to.equal('products');
+    expect(supplier.fileSettings!.sources[0].fileType).to.equal('CSV');
+    expect(supplier.fileSettings!.sources[0].joinIndex).to.equal(0);
+    expect(supplier.fileSettings!.sources[0].headers).to.equal(true);
+    expect(supplier.fileSettings!.sources[0].authorization!.passwordKey).to.equal('password');
+    expect(supplier.fileSettings!.sources[1].id).to.equal('nutrients');
+    expect(supplier.fileSettings!.weightMapping.unitOfMeasurement).to.equal('g');
+    expect(supplier.id).to.equal('1e4ebaa6-9796-4ccf-bd73-8765893a66bd');
+    expect(supplier.integrationId).to.equal('2eacfed0-46ce-46b5-b8c6-dd8e29672c8c');
+    expect(supplier.name).to.equal('Europa Sports');
   }
 });

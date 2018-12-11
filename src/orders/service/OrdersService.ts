@@ -19,6 +19,7 @@ import * as Q from 'q';
 const EXPECTED_GET_STATUS = 200;
 const EXPECTED_CREATE_STATUS = 202;
 const EXPECTED_UPDATE_STATUS = 202;
+const EXPECTED_DELETE_STATUS = 200;
 
 type GenericOrdersQueryRequest =
   OrdersQueryRequestByBusinessId | OrdersQueryRequestByChannel | OrdersQueryRequestByChannelOrderId;
@@ -72,6 +73,15 @@ export default class OrdersService {
     };
     this.client.post(requestUrl, options, (error, response, body) => {
       this.mapOrderPromise(requestUrl, deferred, error, response, body, EXPECTED_CREATE_STATUS);
+    });
+    return deferred.promise as any;
+  }
+
+  public delete(orderId: string): Promise<Order> {
+    const deferred = Q.defer<Order>();
+    const requestUrl = `${Version.V1}${Resource.ORDERS}/${orderId}`;
+    this.client.delete(requestUrl, {}, (error, response, body) => {
+      this.mapOrderPromise(requestUrl, deferred, error, response, body, EXPECTED_DELETE_STATUS);
     });
     return deferred.promise as any;
   }

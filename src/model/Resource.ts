@@ -2,6 +2,7 @@ enum Resource {
   SESSIONS = '/sessions',
   ACTIONS = '/actions',
   CHANNELS = '/channels',
+  SUPPLIERS = '/suppliers',
   ORDERS = '/orders',
   PRODUCTS = '/products',
   VARIANTS = '/variants',

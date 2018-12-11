@@ -38,6 +38,17 @@ export default class RequestClientWrapper {
     );
   }
 
+  public delete(url: string, params: AxiosRequestConfig, callback: RequestCallback): void {
+    this.makeRequest(
+      HttpRequestMethod.DELETE,
+      new Date(),
+      0,
+      url,
+      params,
+      callback
+    );
+  }
+
   public put(url: string, params: AxiosRequestConfig, callback: RequestCallback): void {
     this.makeRequest(
       HttpRequestMethod.PUT,
@@ -92,6 +103,9 @@ export default class RequestClientWrapper {
         case HttpRequestMethod.POST:
           const postData = options.data === undefined ? '' : options.data;
           requestPromise = axios.post(url, { body: postData }, options);
+          break;
+        case HttpRequestMethod.DELETE:
+          requestPromise = axios.delete(url, options);
           break;
         default:
           throw new ChannelApeError('HTTP Request Method could not be determined', {} as any, '', []);
