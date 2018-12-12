@@ -11,4 +11,7 @@ describe('HttpRequestMethod', () => {
   it('POST', () => {
     expect(HttpRequestMethod.POST).to.equal('POST');
   });
+  it('DELETE', () => {
+    expect(HttpRequestMethod.DELETE).to.equal('DELETE');
+  });
 });
