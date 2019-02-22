@@ -12,17 +12,11 @@ TypeScript and JavaScript SDK for the [ChannelApe REST API](https://docs.channel
 - [Orders](#orders)
 - [Variants](#variants)
 - [Businesses](#businesses)
+- [Subscriptions](#subscriptions)
 
 ### Getting Started
 
 The ChannelApe SDK is asynchronous and all functions return promises.
-
-### Using in a browser based app?
-
-Make sure when you install the SDK you install with the *--no-optional* flag
-```
-npm i channelape-sdk --save --no-optional
-```
 
 #### Creating a client
 
@@ -270,3 +264,14 @@ channelApeClient.businesses().get(businessesQueryRequestByUserId)
   });
 ```
 See [Sessions](#sessions) for how to retrieve your `userId`
+
+### Subscriptions
+
+#### Get Subscription
+```typescript
+const businessId = 'valid-business-id';
+channelApeClient.subscriptions().get(businessId)
+  .then((subscription: Subscription) => {
+    // do what you need to do with subscription data here
+  });
+```
